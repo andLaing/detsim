@@ -6,6 +6,8 @@ import tables as tb
 
 from numpy.random import randint
 
+from functools    import partial
+
 from pytest import  approx
 from pytest import fixture
 from pytest import    mark
@@ -15,9 +17,11 @@ from invisible_cities.io  .mcinfo_io         import load_mcsensor_response_df
 from invisible_cities.io  .mcinfo_io         import        get_sensor_binning
 from invisible_cities.core.system_of_units_c import                     units
 
-from . hdf5_io   import      save_run_info
-from . hdf5_io   import    event_timestamp
-from . hdf5_io   import      buffer_writer
+from . hdf5_io import   buffer_writer
+from . hdf5_io import event_timestamp
+from . hdf5_io import       load_hits
+from . hdf5_io import    load_sensors
+from . hdf5_io import   save_run_info
 
 from ..simulation.buffer_functions import calculate_buffers
 from ..util      .util             import     trigger_times
@@ -82,7 +86,7 @@ def event_definitions(fullsim_data):
 def test_buffer_writer(config_tmpdir, event_definitions,
                        event, triggers):
     len_eng, len_trk, pmt_bins, sipm_bins, calc_buffers = event_definitions
-    
+
     pmt_orders  = list(pd.unique(randint(0,   12, randint(1,  12))))
     sipm_orders = list(pd.unique(randint(0, 1792, randint(1, 500))))
 
@@ -92,12 +96,12 @@ def test_buffer_writer(config_tmpdir, event_definitions,
     pmtwf   = pd.Series(pmtwf_ .tolist(),  pmt_orders)
     sipmwf_ = np.random.poisson(5, (len(sipm_orders), sipm_bins.shape[0]))
     sipmwf  = pd.Series(sipmwf_.tolist(), sipm_orders)
-    
+
     buffers = calc_buffers(triggers, pmt_bins, pmtwf, sipm_bins, sipmwf)
 
     out_name = os.path.join(config_tmpdir, 'test_buffers.h5')
     with tb.open_file(out_name, 'w') as data_out:
-    
+
         buffer_writer_ = buffer_writer(data_out,
                                        length_eng = len_eng,
                                        length_trk = len_trk)
@@ -127,10 +131,12 @@ def test_buffer_writer(config_tmpdir, event_definitions,
         assert len( pmts) == len(triggers)
         assert len(sipms) == len(triggers)
 
-        for i, (trg, pre, pos) in enumerate(zip(triggers, pmt_presamp, pmt_possamp)):
-            file_pmt_sum  = np.sum(np.array(pmts[i])[pmt_orders], axis=1)
-            slice_        = slice(max(0, trg - pre),
-                                  min(pmtwf_.shape[1] - 1, trg + pos))
+        for i, (trg, pre, pos) in enumerate(zip(triggers   ,
+                                                pmt_presamp,
+                                                pmt_possamp)):
+            file_pmt_sum = np.sum(np.array(pmts[i])[pmt_orders], axis=1)
+            slice_       = slice(max(0, trg - pre),
+                                 min(pmtwf_.shape[1] - 1, trg + pos))
             assert np.all(file_pmt_sum == np.sum(pmtwf_[:, slice_], axis=1))
 
         for i, sibin in enumerate(sipm_bin):
@@ -139,3 +145,55 @@ def test_buffer_writer(config_tmpdir, event_definitions,
             slice_        = slice(max(0, sibin - sipm_presamp),
                                   min(sipmwf_.shape[1] -1, sibin + sipm_possamp))
             assert np.all(file_sipm_sum == np.sum(sipmwf_[:, slice_], axis=1))
+
+
+def test_load_sensors(fullsim_data):
+
+    #Get basic info about the file
+    with tb.open_file(fullsim_data) as h5info:
+        n_evt  = len(h5info.root.MC.extents)
+        wf_end = [ext[1] for ext in h5info.root.MC.extents]
+        n_wfs  = np.diff([0] + wf_end) + 1
+
+    expected_keys = ['evt', 'mc', 'timestamp', 'pmt_binwid',
+                     'sipm_binwid',  'pmt_wfs', 'sipm_wfs']
+
+    source  = partial(load_sensors, db_file = 'new', run_no = -6400)
+    evt_gen = source((fullsim_data,))
+
+    for i in range(n_evt):
+        evt_dict = next(evt_gen)
+
+        assert len(evt_dict) == len(expected_keys)
+
+        data_keys = evt_dict.keys()
+        for exp_key in expected_keys:
+            assert exp_key in data_keys
+
+        data_nwfs =   evt_dict[ 'pmt_wfs'].shape[0] \
+                    + evt_dict['sipm_wfs'].shape[0]
+        assert data_nwfs == n_wfs[i]
+
+
+def test_load_hits(fullsim_data):
+
+    #Get basic info about the file
+    with tb.open_file(fullsim_data) as h5info:
+        n_evt   = len(h5info.root.MC.extents)
+        hit_end = [ext[2] for ext in h5info.root.MC.extents]
+        n_hits  = np.diff([0] + hit_end) + 1
+
+    expected_keys = ['evt', 'mc', 'timestamp', 'hits']
+
+    evt_gen = load_hits((fullsim_data,))
+
+    for i in range(n_evt):
+        evt_dict = next(evt_gen)
+
+        assert len(evt_dict) == len(expected_keys)
+
+        data_keys = evt_dict.keys()
+        for exp_key in expected_keys:
+            assert exp_key in data_keys
+
+        assert evt_dict['hits'].shape[0] == n_hits[i]
