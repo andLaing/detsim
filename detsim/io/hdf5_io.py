@@ -11,7 +11,6 @@ from typing    import      List
 from invisible_cities.database           import                   load_db as  DB
 from invisible_cities.io      .mcinfo_io import load_mcsensor_response_df
 from invisible_cities.io      .mcinfo_io import            read_mchits_df
-from invisible_cities.io      .mcinfo_io import       read_mcsns_response
 from invisible_cities.io      .rwf_io    import                rwf_writer
 from invisible_cities.reco               import             tbl_functions as tbl
 
@@ -36,8 +35,19 @@ class RunInfo(tb.IsDescription):
     run_number = tb.Int32Col(shape=(), pos=0)
 
 
-def save_run_info(h5out      : tb.file.File,
-                  run_number :          int) -> None:
+def save_run_info(h5out     : tb.file.File,
+                  run_number:          int) -> None:
+    """
+    Saves the run number used for the detsim
+    format job in the format expected by the
+    IC cities.
+
+    h5out      : pytables file
+                 The open output file
+    run_number : int
+                 The run number set in the config
+    """
+
     try:
         run_table = getattr(h5out.root.Run, 'runInfo')
     except tb.NoSuchNodeError:
@@ -54,35 +64,42 @@ def save_run_info(h5out      : tb.file.File,
     row.append()
 
 
-def event_timestamp(file_in : tb.file.File) -> Callable:
+def event_timestamp(h5in: tb.file.File) -> Callable:
     """
-    Returns a function giving access to the next
-    events first hit time.
+    Returns a function iterator giving access
+    to the next event's first hit time.
     This is used as the event timestamp.
+    This is needed for the event information
+    required by the IC cities.
     Generally set to zero in nexus but here for
     completeness.
+
+    h5in : pytables file
+           The input nexus hdf5 file.
     """
 
-    hit_inds   = (ext[2] + 1 for ext in file_in.root.MC.extents[:-1])
-    first_hits = iter(np.concatenate(([0], np.fromiter(hit_inds, np.int))))
-    max_iter = len(file_in.root.MC.extents)
+    # The extents table saves the last hit index for each
+    # event, we need the first so +1
+    hit_indx   = (int(ext[2] + 1) for ext in h5in.root.MC.extents[:-1])
+    first_hits = iter([0] + list(hit_indx))
+    max_iter   = len(h5in.root.MC.extents)
     def get_evt_timestamp() -> float:
         get_evt_timestamp.counter += 1
         if get_evt_timestamp.counter > max_iter:
             raise IndexError('No more events')
-        return file_in.root.MC.hits[next(first_hits)][2]
+        return h5in.root.MC.hits[next(first_hits)][2]
     get_evt_timestamp.counter = 0
     return get_evt_timestamp
 
 
 @wraps(rwf_writer)
 def buffer_writer(h5out, *,
-                  group_name  : str = 'detsim',
-                  compression : str =  'ZLIB4',
-                  n_sens_eng  : int =       12,
-                  n_sens_trk  : int =     1792,
-                  length_eng  : int           ,
-                  length_trk  : int           ) -> Callable[[int, List, List, List], None]:
+                  group_name : str = 'detsim',
+                  compression: str =  'ZLIB4',
+                  n_sens_eng : int =       12,
+                  n_sens_trk : int =     1792,
+                  length_eng : int           ,
+                  length_trk : int           ) -> Callable[[int, List, List, List], None]:
     """
     Generalised buffer writer which defines a raw waveform writer
     for each type of sensor as well as an event info writer
@@ -110,14 +127,15 @@ def buffer_writer(h5out, *,
         evt_group = h5out.create_group(h5out.root, 'Run')
 
     nexus_evt_tbl = h5out.create_table(evt_group, "events", EventInfo,
-                                       "event, timestamp & nexus evt for each index",
+                                       "event, timestamp & nexus evt \
+                                       for each index",
                                        tbl.filters(compression))
 
-    def write_buffers(nexus_evt      :        int ,
-                      eng_sens_order : List[  int],
-                      trk_sens_order : List[  int],
-                      timestamps     : List[  int],
-                      events         : List[Tuple]) -> None:
+    def write_buffers(nexus_evt     :        int ,
+                      eng_sens_order: List[  int],
+                      trk_sens_order: List[  int],
+                      timestamps    : List[  int],
+                      events        : List[Tuple]) -> None:
 
         for t_stamp, (eng, trk) in zip(timestamps, events):
             row = nexus_evt_tbl.row
@@ -140,9 +158,24 @@ def buffer_writer(h5out, *,
     return write_buffers
 
 
-def load_sensors(file_names : List[str],
-                 db_file    :      str ,
-                 run_no     :      int ) -> Generator[Tuple, None, None]:
+def load_sensors(file_names: List[str],
+                 db_file   :      str ,
+                 run_no    :      int ) -> Generator:
+    """
+    Loads the nexus MC sensor information into
+    a pandas DataFrame using the IC function
+    load_mcsensor_response_df.
+    Returns info event by event in as a
+    generator in the structure expected by
+    the dataflow.
+
+    file_names : List of strings
+                 List of input file names to be read
+    db_file    : string
+                 Name of detector database to be used
+    run_no     : int
+                 Run number for database
+    """
 
     pmt_ids  = DB.DataPMT (db_file, run_no).SensorID
     sipm_ids = DB.DataSiPM(db_file, run_no).SensorID
@@ -174,10 +207,17 @@ def load_sensors(file_names : List[str],
                            sipm_wfs    = sipm_wfs    )
 
 
-## !! This uses a copy of the fanal function load_mc_hits
-## !! Will be imported and wrapped as necessary once
-## !! moved to IC
-def load_hits(file_names : List[str]) -> Generator:
+def load_hits(file_names: List[str]) -> Generator:
+    """
+    Loads mc hit info into a pandas DataFrame
+    using the IC function read_mchits_df.
+    Returns this information as well as timestamp
+    and general mc info in the generator format
+    expected by the dataflow.
+
+    files_names : list of strings
+                  List of nexus file names to be read.
+    """
 
     for file_name in file_names:
         with tb.open_file(file_name) as h5in:
@@ -193,7 +233,7 @@ def load_hits(file_names : List[str]) -> Generator:
             timestamps = event_timestamp(h5in)
 
             for evt in event_ids:
-                yield dict(evt       = evt                ,
-                           mc        = mc_info            ,
-                           timestamp = timestamp()        ,
-                           hits      = hits_df.loc[evt, :])
+                yield dict(evt       = evt             ,
+                           mc        = mc_info         ,
+                           timestamp = timestamps()    ,
+                           hits      = hits_df.loc[evt])
