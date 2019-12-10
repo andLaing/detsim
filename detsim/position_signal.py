@@ -22,9 +22,9 @@ from detsim.io        .hdf5_io          import     buffer_writer
 from detsim.io        .hdf5_io          import      load_sensors
 from detsim.io        .hdf5_io          import     save_run_info
 from detsim.util      .util             import     trigger_times
-from detsim.simulation.buffer_functions import calculate_binning
+from detsim.simulation.buffer_functions import         wf_binner
 from detsim.simulation.buffer_functions import calculate_buffers
-from detsim.simulation.buffer_functions import    trigger_finder
+from detsim.simulation.buffer_functions import     signal_finder
 
 from invisible_cities.core    .configure         import          configure
 from invisible_cities.core    .system_of_units_c import              units
@@ -80,7 +80,7 @@ def position_signal(conf):
     nsamp_pmt          = int(buffer_length * units.mus /  pmt_wid)
     nsamp_sipm         = int(buffer_length * units.mus / sipm_wid)
 
-    bin_calculation    = calculate_binning(max_time)
+    bin_calculation    = wf_binner(max_time)
     pmt_binning        = fl.map(bin_calculation,
                                 args = ("pmt_wfs" ,  "pmt_binwid"),
                                 out  = ("pmt_bins", "pmt_bin_wfs"))
@@ -100,18 +100,18 @@ def position_signal(conf):
                                 args = ("pmt_bin_wfs", "sipm_bin_wfs"),
                                 out  = ("pmt_ord", "sipm_ord"))
 
-    trigger_finder_    = fl.map(trigger_finder(buffer_length,
-                                               pmt_wid, trg_threshold),
+    signal_finder_     = fl.map(signal_finder(buffer_length,
+                                              pmt_wid, trg_threshold),
                                 args = "pmt_bin_wfs",
-                                out  = "triggers")
+                                out  = "pulses")
 
     event_times        = fl.map(trigger_times,
-                                args = ("triggers", "timestamp", "pmt_bins"),
+                                args = ("pulses", "timestamp", "pmt_bins"),
                                 out  = "evt_times")
 
     calculate_buffers_ = fl.map(calculate_buffers(buffer_length, pre_trigger,
                                                   pmt_wid      ,    sipm_wid),
-                                args = ("triggers",
+                                args = ("pulses",
                                         "pmt_bins" ,  "pmt_bin_wfs",
                                         "sipm_bins", "sipm_bin_wfs"),
                                 out  = "buffers")
@@ -134,7 +134,7 @@ def position_signal(conf):
                                   extract_minmax      ,
                                   sipm_binning        ,
                                   sensor_order_       ,
-                                  trigger_finder_     ,
+                                  signal_finder_      ,
                                   event_times         ,
                                   calculate_buffers_  ,
                                   fork(buffer_writer_,
