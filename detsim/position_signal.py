@@ -102,7 +102,7 @@ def position_signal(conf):
 
     trigger_finder_    = fl.map(trigger_finder(buffer_length,
                                                pmt_wid, trg_threshold),
-                                args = "pmt_wfs",
+                                args = "pmt_bin_wfs",
                                 out  = "triggers")
 
     event_times        = fl.map(trigger_times,
