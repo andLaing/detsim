@@ -1,8 +1,8 @@
 """
-Module taking in nexus full simulation and
-positioning the signal according to a
-given buffer size, pre-trigger and simple
-trigger conditions.
+Module taking in nexus full simulation sensitive detector info and
+positioning the signal according to a given buffer size, pre-trigger
+and simple 'trigger' conditions which allow for the positioning of
+the signal within the buffers.
 """
 
 import   os
@@ -16,14 +16,13 @@ import tables as tb
 from glob      import    glob
 from functools import partial
 from functools import   wraps
-from typing    import   Tuple
 
 from detsim.io        .hdf5_io          import        buffer_writer
 from detsim.io        .hdf5_io          import         load_sensors
 from detsim.io        .hdf5_io          import        save_run_info
-from detsim.simulation.buffer_functions import            wf_binner
 from detsim.simulation.buffer_functions import    calculate_buffers
 from detsim.simulation.buffer_functions import        signal_finder
+from detsim.simulation.buffer_functions import            wf_binner
 from detsim.util      .util             import first_and_last_times
 from detsim.util      .util             import       get_no_sensors
 from detsim.util      .util             import         sensor_order
@@ -31,8 +30,8 @@ from detsim.util      .util             import        trigger_times
 
 from invisible_cities.core.configure         import          configure
 from invisible_cities.core.system_of_units_c import              units
-from invisible_cities.io  .mcinfo_io         import     mc_info_writer
 from invisible_cities.io  .mcinfo_io         import get_sensor_binning
+from invisible_cities.io  .mcinfo_io         import     mc_info_writer
 from invisible_cities.reco                   import      tbl_functions as tbl
 
 from invisible_cities.dataflow          import dataflow as fl
