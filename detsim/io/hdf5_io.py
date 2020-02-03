@@ -94,7 +94,7 @@ def event_timestamp(h5in: tb.file.File) -> Callable:
 
 @wraps(rwf_writer)
 def buffer_writer(h5out, *,
-                  group_name : str = 'detsim',
+                  group_name : str =     None,
                   compression: str =  'ZLIB4',
                   n_sens_eng : int =       12,
                   n_sens_trk : int =     1792,

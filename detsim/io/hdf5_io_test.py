@@ -116,18 +116,20 @@ def test_buffer_writer(config_tmpdir, event_definitions,
     pmt_presamp  = [int((pmt_bins[trg] - sipm_bins[sibin]) / 100 + 5 * units.mus / 100) for trg, sibin in zip(triggers, sipm_bin)]
     sipm_possamp = len_trk - sipm_presamp
     pmt_possamp  = [len_eng -  presamp for presamp in pmt_presamp]
-    with tb.open_file(out_name) as data_in:
+    with tb.open_file(out_name) as data_out:
 
-        assert 'Run'    in data_in.root
-        assert 'events' in data_in.root.Run
-        assert len(data_in.root.Run.events[:]) == len(triggers)
+        assert 'Run'    in data_out.root
+        assert 'events' in data_out.root.Run
+        assert len(data_out.root.Run.events[:]) == len(triggers)
 
-        assert 'detsim' in data_in.root
-        assert 'pmtrd'  in data_in.root.detsim
-        assert 'sipmrd' in data_in.root.detsim
+        #assert 'detsim' in data_in.root
+        #assert 'pmtrd'  in data_in.root.detsim
+        #assert 'sipmrd' in data_in.root.detsim
+        assert 'pmtrd'  in data_out.root
+        assert 'sipmrd' in data_out.root
 
-        pmts  = data_in.root.detsim.pmtrd
-        sipms = data_in.root.detsim.sipmrd
+        pmts  = data_out.root.pmtrd
+        sipms = data_out.root.sipmrd
         assert len( pmts) == len(triggers)
         assert len(sipms) == len(triggers)
 
