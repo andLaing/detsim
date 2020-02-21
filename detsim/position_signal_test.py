@@ -29,7 +29,6 @@ def test_position_signal_kr(config_tmpdir, fullsim_data, test_config):
 
         assert hasattr(h5out.root   ,        'MC')
         assert hasattr(h5out.root   ,       'Run')
-        assert hasattr(h5out.root   ,    'detsim')
         assert hasattr(h5out.root.MC,   'extents')
         assert hasattr(h5out.root.MC,      'hits')
         assert hasattr(h5out.root.MC, 'particles')
@@ -53,14 +52,14 @@ def test_position_signal_neut(config_tmpdir, neut_fullsim,
     with tb.open_file(neut_buffers, mode='r') as h5test, \
          tb.open_file(PATH_OUT    , mode='r') as h5out:
 
-         pmt_out  = h5out .root.detsim.pmtrd
-         pmt_test = h5test.root.detsim.pmtrd
+         pmt_out  = h5out .root.pmtrd
+         pmt_test = h5test.root.pmtrd
 
          assert pmt_out.shape == pmt_test.shape
          assert_tables_equality(pmt_out, pmt_test)
 
-         sipm_out  = h5out .root.detsim.sipmrd
-         sipm_test = h5test.root.detsim.sipmrd
+         sipm_out  = h5out .root.sipmrd
+         sipm_test = h5test.root.sipmrd
 
          assert sipm_out.shape == sipm_test.shape
          assert_tables_equality(sipm_out, sipm_test)

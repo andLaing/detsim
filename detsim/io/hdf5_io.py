@@ -94,12 +94,12 @@ def event_timestamp(h5in: tb.file.File) -> Callable:
 
 @wraps(rwf_writer)
 def buffer_writer(h5out, *,
-                  group_name : str = 'detsim',
-                  compression: str =  'ZLIB4',
-                  n_sens_eng : int =       12,
-                  n_sens_trk : int =     1792,
+                  n_sens_eng : int           ,
+                  n_sens_trk : int           ,
                   length_eng : int           ,
-                  length_trk : int           ) -> Callable[[int, List, List, List], None]:
+                  length_trk : int           ,
+                  group_name : str =     None,
+                  compression: str =  'ZLIB4') -> Callable[[int, List, List, List], None]:
     """
     Generalised buffer writer which defines a raw waveform writer
     for each type of sensor as well as an event info writer
