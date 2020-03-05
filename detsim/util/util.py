@@ -4,8 +4,9 @@ import pandas as pd
 from typing import  List
 from typing import Tuple
 
-from invisible_cities.database.load_db import  DataPMT
-from invisible_cities.database.load_db import DataSiPM
+from invisible_cities.io      .mcinfo_io import get_sensor_binning
+from invisible_cities.database.load_db   import            DataPMT
+from invisible_cities.database.load_db   import           DataSiPM
 
 
 def trigger_times(trigger_indx: List[int] ,
@@ -36,3 +37,11 @@ def get_no_sensors(detector_db: str, run_number: int) -> Tuple:
     npmt  = DataPMT (detector_db, run_number).shape[0]
     nsipm = DataSiPM(detector_db, run_number).shape[0]
     return npmt, nsipm
+
+
+def pmt_and_sipm_bin_width(file_name: str) -> Tuple:
+    ## Temp function to return pmt and sipm bin widths
+    sns_bins = get_sensor_binning(file_name)
+    pmt_wid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')].iloc[0]
+    sipm_wid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')].iloc[0]
+    return pmt_wid, sipm_wid

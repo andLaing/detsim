@@ -5,6 +5,7 @@ from pytest import    mark
 
 import invisible_cities.database.load_db as DB
 
+from invisible_cities.io  .mcinfo_io         import        get_sensor_binning
 from invisible_cities.io  .mcinfo_io         import load_mcsensor_response_df
 from invisible_cities.core.system_of_units_c import                     units
 
@@ -15,7 +16,11 @@ from . buffer_functions import     signal_finder
 
 @fixture(scope="module")
 def mc_waveforms(fullsim_data):
-    return load_mcsensor_response_df(fullsim_data, 'new', -6400)
+    wfs         = load_mcsensor_response_df(fullsim_data, 'new', -6400)
+    sns_bins    = get_sensor_binning(fullsim_data)
+    pmt_binwid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')]
+    sipm_binwid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')]
+    return wfs.index.levels[0], pmt_binwid.iloc[0], sipm_binwid.iloc[0], wfs
 
 
 ## !! to-do: generalise for all detector configurations

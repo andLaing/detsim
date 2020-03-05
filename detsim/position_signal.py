@@ -16,21 +16,23 @@ import tables as tb
 from glob      import    glob
 from functools import partial
 from functools import   wraps
+from typing    import   Tuple
 
-from detsim.io        .hdf5_io          import        buffer_writer
-from detsim.io        .hdf5_io          import         load_sensors
-from detsim.io        .hdf5_io          import        save_run_info
-from detsim.simulation.buffer_functions import    calculate_buffers
-from detsim.simulation.buffer_functions import        signal_finder
-from detsim.simulation.buffer_functions import            wf_binner
-from detsim.util      .util             import first_and_last_times
-from detsim.util      .util             import       get_no_sensors
-from detsim.util      .util             import         sensor_order
-from detsim.util      .util             import        trigger_times
+from detsim.io        .hdf5_io          import          buffer_writer
+from detsim.io        .hdf5_io          import           load_sensors
+from detsim.io        .hdf5_io          import          save_run_info
+from detsim.simulation.buffer_functions import      calculate_buffers
+from detsim.simulation.buffer_functions import          signal_finder
+from detsim.simulation.buffer_functions import              wf_binner
+from detsim.util      .util             import   first_and_last_times
+from detsim.util      .util             import         get_no_sensors
+from detsim.util      .util             import pmt_and_sipm_bin_width
+from detsim.util      .util             import           sensor_order
+from detsim.util      .util             import          trigger_times
 
 from invisible_cities.core.configure         import          configure
 from invisible_cities.core.system_of_units_c import              units
-from invisible_cities.io  .mcinfo_io         import get_sensor_binning
+#from invisible_cities.io  .mcinfo_io         import get_sensor_binning
 from invisible_cities.io  .mcinfo_io         import     mc_info_writer
 from invisible_cities.reco                   import      tbl_functions as tbl
 
@@ -53,7 +55,7 @@ def position_signal(conf):
     compression   =                         conf.compression
 
     npmt, nsipm        = get_no_sensors(detector_db, run_number)
-    pmt_wid, sipm_wid  = get_sensor_binning(files_in[0])
+    pmt_wid, sipm_wid  = pmt_and_sipm_bin_width(files_in[0])
     nsamp_pmt          = int(buffer_length * units.mus /  pmt_wid)
     nsamp_sipm         = int(buffer_length * units.mus / sipm_wid)
 

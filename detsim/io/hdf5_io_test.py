@@ -23,8 +23,9 @@ from . hdf5_io import       load_hits
 from . hdf5_io import    load_sensors
 from . hdf5_io import   save_run_info
 
-from ..simulation.buffer_functions import calculate_buffers
-from ..util      .util             import     trigger_times
+from ..simulation.buffer_functions import      calculate_buffers
+from ..util      .util             import pmt_and_sipm_bin_width
+from ..util      .util             import          trigger_times
 
 
 def test_save_run_info(config_tmpdir):
@@ -70,7 +71,7 @@ def event_definitions(fullsim_data):
     buffer_length =  10
     pre_trigger   =   5
 
-    pmt_binwid, sipm_binwid = get_sensor_binning(fullsim_data)
+    pmt_binwid, sipm_binwid = pmt_and_sipm_bin_width(fullsim_data)
 
     calculate_buffers_ = calculate_buffers(buffer_length, pre_trigger,
                                            pmt_binwid   , sipm_binwid)
@@ -160,7 +161,7 @@ def test_load_sensors(fullsim_data):
         n_wfs  = np.diff([0] + wf_end) + 1
 
     expected_keys = ['evt', 'mc', 'timestamp', 'pmt_binwid',
-                     'sipm_binwid',  'pmt_wfs', 'sipm_wfs']
+                     'sipm_binwid',  'pmt_wfs',  'sipm_wfs']
 
     source  = partial(load_sensors, db_file = 'new', run_no = -6400)
     evt_gen = source((fullsim_data,))

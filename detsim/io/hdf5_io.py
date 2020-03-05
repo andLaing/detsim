@@ -9,8 +9,9 @@ from typing    import     Tuple
 from typing    import      List
 
 from invisible_cities.database           import                   load_db as  DB
+from invisible_cities.io      .mcinfo_io import        get_sensor_binning
 from invisible_cities.io      .mcinfo_io import load_mcsensor_response_df
-from invisible_cities.io      .mcinfo_io import            read_mchits_df
+from invisible_cities.io      .mcinfo_io import            load_mchits_df
 from invisible_cities.io      .rwf_io    import                rwf_writer
 from invisible_cities.reco               import             tbl_functions as tbl
 
@@ -176,16 +177,17 @@ def load_sensors(file_names: List[str],
     run_no     : int
                  Run number for database
     """
-
     pmt_ids  = DB.DataPMT (db_file, run_no).SensorID
     sipm_ids = DB.DataSiPM(db_file, run_no).SensorID
 
     for file_name in file_names:
 
-        (all_evt    ,
-         pmt_binwid ,
-         sipm_binwid,
-         all_wf     ) = load_mcsensor_response_df(file_name, db_file, run_no)
+        sns_resp = load_mcsensor_response_df(file_name,
+                                             db_file  ,
+                                             run_no   )
+        sns_bins    = get_sensor_binning(file_name)
+        pmt_binwid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')]
+        sipm_binwid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')]
 
         with tb.open_file(file_name, 'r') as h5in:
 
@@ -193,18 +195,20 @@ def load_sensors(file_names: List[str],
 
             timestamps = event_timestamp(h5in)
 
-            for evt in all_evt:
+            for evt in sns_resp.index.levels[0]:
 
-                pmt_wfs  = all_wf.loc[evt].loc[ pmt_ids]
-                sipm_wfs = all_wf.loc[evt].loc[sipm_ids]
+                pmt_sig  = sns_resp.loc[evt].index.isin( pmt_ids)
+                pmt_wfs  = sns_resp.loc[evt][ pmt_sig]
+                sipm_sig = sns_resp.loc[evt].index.isin(sipm_ids)
+                sipm_wfs = sns_resp.loc[evt][sipm_sig]
 
-                yield dict(evt         = evt         ,
-                           mc          = mc_info     ,
-                           timestamp   = timestamps(),
-                           pmt_binwid  = pmt_binwid  ,
-                           sipm_binwid = sipm_binwid ,
-                           pmt_wfs     = pmt_wfs     ,
-                           sipm_wfs    = sipm_wfs    )
+                yield dict(evt         = evt                ,
+                           mc          = mc_info            ,
+                           timestamp   = timestamps()       ,
+                           pmt_binwid  = pmt_binwid.iloc[0] ,
+                           sipm_binwid = sipm_binwid.iloc[0],
+                           pmt_wfs     = pmt_wfs            ,
+                           sipm_wfs    = sipm_wfs           )
 
 
 def load_hits(file_names: List[str]) -> Generator:
@@ -220,19 +224,15 @@ def load_hits(file_names: List[str]) -> Generator:
     """
 
     for file_name in file_names:
+
+        hits_df = load_mchits_df(file_name)
         with tb.open_file(file_name) as h5in:
-
-            extents    = pd.read_hdf(file_name, 'MC/extents')
-
-            event_ids  = extents.evt_number
-
-            hits_df    = read_mchits_df(h5in, extents)
 
             mc_info    = tbl.get_mc_info(h5in)
 
             timestamps = event_timestamp(h5in)
 
-            for evt in event_ids:
+            for evt in hits_df.index.levels[0]:
                 yield dict(evt       = evt             ,
                            mc        = mc_info         ,
                            timestamp = timestamps()    ,
