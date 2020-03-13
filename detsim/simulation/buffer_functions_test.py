@@ -48,10 +48,12 @@ def binned_waveforms(mc_waveforms, pmt_ids, sipm_ids):
     sipms = wfs.loc[sipm_ids]
 
     ## Assumes pmts the triggering sensors as in new/next-100
-    pmt_bins ,  pmt_wf = wf_binner_(pmts ,  pmt_binwid)
+    bins_min = pmts.time.min()
+    bins_max = pmts.time.max() + pmt_binwid
+    pmt_bins ,  pmt_wf = wf_binner_(pmts ,  pmt_binwid,
+                                    bins_min, bins_max)
     sipm_bins, sipm_wf = wf_binner_(sipms, sipm_binwid,
-                                    pmt_bins[0],
-                                    pmt_bins[-1] + np.diff(pmt_bins)[-1])
+                                    bins_min, bins_max)
     return pmt_bins, pmt_wf, sipm_bins, sipm_wf
 
 

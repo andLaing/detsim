@@ -16,9 +16,13 @@ def trigger_times(trigger_indx: List[int] ,
     return [event_time + time_bins[trg] for trg in trigger_indx]
 
 
-def first_and_last_times(sensor_bin_times: np.ndarray) -> Tuple:
-    min_time = sensor_bin_times[ 0]
-    max_time = sensor_bin_times[-1] + np.diff(sensor_bin_times)[-1]
+def first_and_last_times(pmt_wfs    : pd.Series,
+                         sipm_wfs   : pd.Series,
+                         pmt_binwid : float    ,
+                         sipm_binwid: float    ) -> Tuple:
+    min_time  = min(pmt_wfs.time.min(), sipm_wfs.time.min())
+    max_time  = max(pmt_wfs.time.max(), sipm_wfs.time.max())
+    max_time += min(pmt_binwid        ,         sipm_binwid)
     return min_time, max_time
 
 

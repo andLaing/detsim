@@ -59,14 +59,16 @@ def position_signal(conf):
     nsamp_pmt          = int(buffer_length * units.mus /  pmt_wid)
     nsamp_sipm         = int(buffer_length * units.mus / sipm_wid)
 
+    extract_tminmax    = fl.map(first_and_last_times,
+                                args = ("pmt_wfs"   ,    "sipm_wfs",
+                                        "pmt_binwid", "sipm_binwid"),
+                                out  = ("min_time", "max_time"))
+
     bin_calculation    = wf_binner(max_time)
     bin_pmt_wf         = fl.map(bin_calculation,
-                                args = ("pmt_wfs" ,  "pmt_binwid"),
+                                args = ("pmt_wfs" ,  "pmt_binwid",
+                                        "min_time",    "max_time"),
                                 out  = ("pmt_bins", "pmt_bin_wfs"))
-
-    extract_minmax     = fl.map(first_and_last_times,
-                                args = "pmt_bins",
-                                out  = ("min_time", "max_time"))
 
     bin_sipm_wf        = fl.map(bin_calculation,
                                 args = ("sipm_wfs", "sipm_binwid",
@@ -97,8 +99,8 @@ def position_signal(conf):
 
     with tb.open_file(file_out, "w", filters=tbl.filters(compression)) as h5out:
 
-        write_mc       = fl.sink(mc_info_writer(h5out),
-                                 args = ("mc", "evt"))
+        ## write_mc       = fl.sink(mc_info_writer(h5out),
+        ##                          args = ("mc", "evt"))
         buffer_writer_ = fl.sink(buffer_writer(h5out                  ,
                                                n_sens_eng = npmt      ,
                                                n_sens_trk = nsipm     ,
@@ -109,15 +111,16 @@ def position_signal(conf):
 
         save_run_info(h5out, run_number)
         return push(source = load_sensors(files_in, detector_db, run_number),
-                    pipe   = pipe(bin_pmt_wf          ,
-                                  extract_minmax      ,
+                    pipe   = pipe(extract_tminmax     ,
+                                  bin_pmt_wf          ,
                                   bin_sipm_wf         ,
                                   sensor_order_       ,
                                   signal_finder_      ,
                                   event_times         ,
                                   calculate_buffers_  ,
-                                  fork(buffer_writer_,
-                                       write_mc      )))
+                                  buffer_writer_      ))
+                                  ## fork(buffer_writer_,
+                                  ##      write_mc      )))
 
 
 

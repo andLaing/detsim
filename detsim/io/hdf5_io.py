@@ -65,7 +65,8 @@ def save_run_info(h5out     : tb.file.File,
     row.append()
 
 
-def event_timestamp(h5in: tb.file.File) -> Callable:
+#def event_timestamp(h5in: tb.file.File) -> Callable:
+def event_timestamp(file_name : str) ->Callable:
     """
     Returns a function iterator giving access
     to the next event's first hit time.
@@ -78,19 +79,30 @@ def event_timestamp(h5in: tb.file.File) -> Callable:
     h5in : pytables file
            The input nexus hdf5 file.
     """
-
-    # The extents table saves the last hit index for each
-    # event, we need the first so +1
-    hit_indx   = (int(ext[2] + 1) for ext in h5in.root.MC.extents[:-1])
-    first_hits = iter([0] + list(hit_indx))
-    max_iter   = len(h5in.root.MC.extents)
+    ## New readers, no extents necessarily. Needs to be reviewed!
+    hits     = load_mchits_df(file_name)
+    time_it  = hits.groupby(level=0).time.min().iteritems()
+    max_iter = len(hits.index.levels[0])
     def get_evt_timestamp() -> float:
         get_evt_timestamp.counter += 1
         if get_evt_timestamp.counter > max_iter:
             raise IndexError('No more events')
-        return h5in.root.MC.hits[next(first_hits)][2]
+        return next(time_it)[1]
     get_evt_timestamp.counter = 0
     return get_evt_timestamp
+
+    # The extents table saves the last hit index for each
+    # event, we need the first so +1
+    ## hit_indx   = (int(ext[2] + 1) for ext in h5in.root.MC.extents[:-1])
+    ## first_hits = iter([0] + list(hit_indx))
+    ## max_iter   = len(h5in.root.MC.extents)
+    ## def get_evt_timestamp() -> float:
+    ##     get_evt_timestamp.counter += 1
+    ##     if get_evt_timestamp.counter > max_iter:
+    ##         raise IndexError('No more events')
+    ##     return h5in.root.MC.hits[next(first_hits)][2]
+    ## get_evt_timestamp.counter = 0
+    ## return get_evt_timestamp
 
 
 @wraps(rwf_writer)
@@ -189,11 +201,11 @@ def load_sensors(file_names: List[str],
         pmt_binwid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')]
         sipm_binwid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')]
 
+        timestamps = event_timestamp(file_name)
+
         with tb.open_file(file_name, 'r') as h5in:
 
-            mc_info = tbl.get_mc_info(h5in)
-
-            timestamps = event_timestamp(h5in)
+            #mc_info = tbl.get_mc_info(h5in)
 
             for evt in sns_resp.index.levels[0]:
 
@@ -203,9 +215,9 @@ def load_sensors(file_names: List[str],
                 sipm_wfs = sns_resp.loc[evt][sipm_sig]
 
                 yield dict(evt         = evt                ,
-                           mc          = mc_info            ,
+                           #mc          = mc_info            ,
                            timestamp   = timestamps()       ,
-                           pmt_binwid  = pmt_binwid.iloc[0] ,
+                           pmt_binwid  = pmt_binwid .iloc[0],
                            sipm_binwid = sipm_binwid.iloc[0],
                            pmt_wfs     = pmt_wfs            ,
                            sipm_wfs    = sipm_wfs           )
@@ -226,11 +238,10 @@ def load_hits(file_names: List[str]) -> Generator:
     for file_name in file_names:
 
         hits_df = load_mchits_df(file_name)
+        timestamps = event_timestamp(file_name)
         with tb.open_file(file_name) as h5in:
 
             mc_info    = tbl.get_mc_info(h5in)
-
-            timestamps = event_timestamp(h5in)
 
             for evt in hits_df.index.levels[0]:
                 yield dict(evt       = evt             ,

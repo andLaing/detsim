@@ -116,10 +116,10 @@ def wf_binner(max_buffer: int) -> Callable:
     max_buffer : float
         Maximum event time to be considered in nanoseconds
     """
-    def bin_data(sensors  : pd.Series   ,
-                 bin_width: float       ,
-                 t_min    : float = None,
-                 t_max    : float = None) -> Tuple:
+    def bin_data(sensors  : pd.Series,
+                 bin_width: float    ,
+                 t_min    : float    ,
+                 t_max    : float    ) -> Tuple:
         """
         Raw data binning function.
 
@@ -127,23 +127,23 @@ def wf_binner(max_buffer: int) -> Callable:
             Should be sorted into one type/binning
         t_min : float
             Minimum time to be used to define bins.
-            Should be used only if the binning is defined
-            by one type of sensor to be applied to another
-            as in the case of NEW with PMTs and SiPMs
         t_max : float
             As t_min but the maximum to be used
         """
-        if t_min is None or t_max is None:
-            min_time = sensors.time.min()
-            max_time = min(sensors.time.max()   ,
-                           min_time + max_buffer)
-            min_bin  = np.floor(min_time / bin_width) * bin_width
-            max_bin  = np.floor(max_time / bin_width) * bin_width
-            max_bin += bin_width
-        else:
-            ## Adjust according to bin_width
-            min_bin  = np.floor(t_min / bin_width) * bin_width
-            max_bin  = np.ceil (t_max / bin_width) * bin_width
+        max_time = min(t_max, t_min + max_buffer)
+        min_bin  = np.floor(t_min    / bin_width) * bin_width
+        max_bin  = np.ceil (max_time / bin_width) * bin_width
+        ## if t_min is None or t_max is None:
+        ##     min_time = sensors.time.min()
+        ##     max_time = min(sensors.time.max()   ,
+        ##                    min_time + max_buffer)
+        ##     min_bin  = np.floor(min_time / bin_width) * bin_width
+        ##     max_bin  = np.floor(max_time / bin_width) * bin_width
+        ##     max_bin += bin_width
+        ## else:
+        ##     ## Adjust according to bin_width
+        ##     min_bin  = np.floor(t_min / bin_width) * bin_width
+        ##     max_bin  = np.ceil (t_max / bin_width) * bin_width
 
         bins = np.arange(min_bin, max_bin, bin_width)
 

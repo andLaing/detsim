@@ -12,9 +12,12 @@ def test_first_and_last_times():
 
     bin_min    = 22
     bin_max    = 40
-    test_bins  = np.arange(bin_min, bin_max)
+    test_bins1 = np.arange(bin_min, bin_max)
+    test_bins2 = np.arange(bin_min, bin_max - 1)
 
-    bmin, bmax = first_and_last_times(test_bins)
+    bmin, bmax = first_and_last_times(pd.Series({'time': test_bins1}),
+                                      pd.Series({'time': test_bins2}),
+                                      1, 1)
 
     assert np.round(bmin) == bin_min
     assert np.round(bmax) == bin_max
