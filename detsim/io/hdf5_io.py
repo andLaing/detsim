@@ -20,12 +20,22 @@ class EventInfo(tb.IsDescription):
     """
     For the runInfo table to save event
     number and timestamp.
-    Additionally, saves the original nexus
-    event number
+    #Additionally, saves the original nexus
+    #event number
     """
     event_number = tb. Int32Col(shape=(), pos=0)
     timestamp    = tb.UInt64Col(shape=(), pos=1)
-    nexus_evt    = tb. Int32Col(shape=(), pos=2)
+    #nexus_evt    = tb. Int32Col(shape=(), pos=2)
+
+
+class EventMap(tb.IsDescription):
+    """
+    Maps the output event number and
+    the original nexus event number
+    NEEDS TO BE REVIEWED FOR INTEGRATION
+    """
+    event_number = tb.Int32Col(shape=(), pos=0)
+    nexus_evt    = tb.Int32Col(shape=(), pos=1)
 
 
 class RunInfo(tb.IsDescription):
@@ -139,10 +149,14 @@ def buffer_writer(h5out, *,
     except tb.NoSuchNodeError:
         evt_group = h5out.create_group(h5out.root, 'Run')
 
-    nexus_evt_tbl = h5out.create_table(evt_group, "events", EventInfo,
-                                       "event, timestamp & nexus evt \
-                                       for each index",
-                                       tbl.filters(compression))
+    evt_tbl   = h5out.create_table(evt_group, "events", EventInfo,
+                                   "event & timestamp \
+                                    for each index",
+                                   tbl.filters(compression))
+    nexus_map = h5out.create_table(evt_group, "eventMap", EventMap,
+                                   "event & nexus evt \
+                                    for each index",
+                                   tbl.filters(compression))
 
     def write_buffers(nexus_evt     :        int ,
                       eng_sens_order: List[  int],
@@ -151,11 +165,14 @@ def buffer_writer(h5out, *,
                       events        : List[Tuple]) -> None:
 
         for t_stamp, (eng, trk) in zip(timestamps, events):
-            row = nexus_evt_tbl.row
-            row["event_number"] = write_buffers.counter
-            row["timestamp"]    = t_stamp
-            row["nexus_evt"]    = nexus_evt
-            row.append()
+            row  = evt_tbl.row
+            row ["event_number"] = write_buffers.counter
+            row ["timestamp"]    = t_stamp
+            row .append()
+            mrow = nexus_map.row
+            mrow["event_number"] = write_buffers.counter
+            mrow["nexus_evt"]    = nexus_evt
+            mrow.append()
 
             e_sens = np.zeros((n_sens_eng, length_eng), np.int)
             t_sens = np.zeros((n_sens_trk, length_trk), np.int)
