@@ -170,7 +170,7 @@ def buffer_writer(h5out, *,
             row ["timestamp"]    = t_stamp
             row .append()
             mrow = nexus_map.row
-            mrow["event_number"] = write_buffers.counter
+            mrow["event_number"] = nexus_evt#write_buffers.counter
             mrow["nexus_evt"]    = nexus_evt
             mrow.append()
 
