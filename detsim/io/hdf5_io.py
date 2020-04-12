@@ -211,33 +211,28 @@ def load_sensors(file_names: List[str],
 
     for file_name in file_names:
 
-        sns_resp = load_mcsensor_response_df(file_name,
-                                             db_file  ,
-                                             run_no   )
+        sns_resp = load_mcsensor_response_df(file_name        ,
+                                             db_file = db_file,
+                                             run_no  = run_no )
         sns_bins    = get_sensor_binning(file_name)
         pmt_binwid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')]
         sipm_binwid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')]
 
         timestamps = event_timestamp(file_name)
 
-        with tb.open_file(file_name, 'r') as h5in:
+        for evt in sns_resp.index.levels[0]:
 
-            #mc_info = tbl.get_mc_info(h5in)
+            pmt_sig  = sns_resp.loc[evt].index.isin( pmt_ids)
+            pmt_wfs  = sns_resp.loc[evt][ pmt_sig]
+            sipm_sig = sns_resp.loc[evt].index.isin(sipm_ids)
+            sipm_wfs = sns_resp.loc[evt][sipm_sig]
 
-            for evt in sns_resp.index.levels[0]:
-
-                pmt_sig  = sns_resp.loc[evt].index.isin( pmt_ids)
-                pmt_wfs  = sns_resp.loc[evt][ pmt_sig]
-                sipm_sig = sns_resp.loc[evt].index.isin(sipm_ids)
-                sipm_wfs = sns_resp.loc[evt][sipm_sig]
-
-                yield dict(evt         = evt                ,
-                           #mc          = mc_info            ,
-                           timestamp   = timestamps()       ,
-                           pmt_binwid  = pmt_binwid .iloc[0],
-                           sipm_binwid = sipm_binwid.iloc[0],
-                           pmt_wfs     = pmt_wfs            ,
-                           sipm_wfs    = sipm_wfs           )
+            yield dict(evt         = evt                ,
+                       timestamp   = timestamps()       ,
+                       pmt_binwid  = pmt_binwid .iloc[0],
+                       sipm_binwid = sipm_binwid.iloc[0],
+                       pmt_wfs     = pmt_wfs            ,
+                       sipm_wfs    = sipm_wfs           )
 
 
 def load_hits(file_names: List[str]) -> Generator:

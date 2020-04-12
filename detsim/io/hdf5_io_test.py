@@ -183,6 +183,7 @@ def test_load_sensors(fullsim_data):
         assert data_nwfs == n_wfs[i]
 
 
+@mark.skip
 def test_load_hits(fullsim_data):
 
     #Get basic info about the file

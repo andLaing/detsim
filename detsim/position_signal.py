@@ -30,17 +30,25 @@ from detsim.util      .util             import pmt_and_sipm_bin_width
 from detsim.util      .util             import           sensor_order
 from detsim.util      .util             import          trigger_times
 
-from invisible_cities.core.configure         import          configure
-from invisible_cities.core.system_of_units_c import              units
-#from invisible_cities.io  .mcinfo_io         import get_sensor_binning
-from invisible_cities.io  .mcinfo_io         import     mc_info_writer
-from invisible_cities.reco                   import      tbl_functions as tbl
+from invisible_cities.cities.components import   copy_mc_info
+from invisible_cities.core  .configure  import      configure
+from invisible_cities.core              import system_of_units as units
+from invisible_cities.io    .mcinfo_io  import get_event_numbers_in_file
+from invisible_cities.io    .mcinfo_io  import  mc_info_writer
+from invisible_cities.reco              import   tbl_functions as   tbl
 
 from invisible_cities.dataflow          import dataflow as fl
 from invisible_cities.dataflow.dataflow import     fork
 from invisible_cities.dataflow.dataflow import     pipe
 from invisible_cities.dataflow.dataflow import     push
 
+## TEMP
+def get_all_events(files_in):
+    all_evt = []
+    for fn in files_in:
+        all_evt.append(get_event_numbers_in_file(fn))
+    return np.concatenate(all_evt)
+    
 
 def position_signal(conf):
 
@@ -58,6 +66,7 @@ def position_signal(conf):
     pmt_wid, sipm_wid  = pmt_and_sipm_bin_width(files_in[0])
     nsamp_pmt          = int(buffer_length * units.mus /  pmt_wid)
     nsamp_sipm         = int(buffer_length * units.mus / sipm_wid)
+    all_evt            = get_all_events(files_in)
 
     extract_tminmax    = fl.map(first_and_last_times,
                                 args = ("pmt_wfs"   ,    "sipm_wfs",
@@ -99,8 +108,6 @@ def position_signal(conf):
 
     with tb.open_file(file_out, "w", filters=tbl.filters(compression)) as h5out:
 
-        ## write_mc       = fl.sink(mc_info_writer(h5out),
-        ##                          args = ("mc", "evt"))
         buffer_writer_ = fl.sink(buffer_writer(h5out                  ,
                                                n_sens_eng = npmt      ,
                                                n_sens_trk = nsipm     ,
@@ -110,6 +117,8 @@ def position_signal(conf):
                                          "evt_times", "buffers"))
 
         save_run_info(h5out, run_number)
+        ## In IC will have event_range option so will be like in other cities
+        copy_mc_info(files_in, h5out, all_evt, detector_db, run_number)
         return push(source = load_sensors(files_in, detector_db, run_number),
                     pipe   = pipe(extract_tminmax     ,
                                   bin_pmt_wf          ,
@@ -119,8 +128,6 @@ def position_signal(conf):
                                   event_times         ,
                                   calculate_buffers_  ,
                                   buffer_writer_      ))
-                                  ## fork(buffer_writer_,
-                                  ##      write_mc      )))
 
 
 

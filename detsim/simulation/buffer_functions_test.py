@@ -16,7 +16,9 @@ from . buffer_functions import     signal_finder
 
 @fixture(scope="module")
 def mc_waveforms(fullsim_data):
-    wfs         = load_mcsensor_response_df(fullsim_data, 'new', -6400)
+    wfs         = load_mcsensor_response_df(fullsim_data   ,
+                                            db_file = 'new',
+                                            run_no  = -6400)
     sns_bins    = get_sensor_binning(fullsim_data)
     pmt_binwid  = sns_bins.bin_width[sns_bins.index.str.contains( 'Pmt')]
     sipm_binwid = sns_bins.bin_width[sns_bins.index.str.contains('SiPM')]
