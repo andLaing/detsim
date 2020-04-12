@@ -166,7 +166,7 @@ def buffer_writer(h5out, *,
 
         for t_stamp, (eng, trk) in zip(timestamps, events):
             row  = evt_tbl.row
-            row ["event_number"] = write_buffers.counter
+            row ["event_number"] = nexus_evt#write_buffers.counter
             row ["timestamp"]    = t_stamp
             row .append()
             mrow = nexus_map.row
