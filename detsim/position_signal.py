@@ -20,7 +20,7 @@ from typing    import   Tuple
 
 from detsim.io        .hdf5_io          import          buffer_writer
 from detsim.io        .hdf5_io          import           load_sensors
-from detsim.io        .hdf5_io          import          save_run_info
+#from detsim.io        .hdf5_io          import          save_run_info
 from detsim.simulation.buffer_functions import      calculate_buffers
 from detsim.simulation.buffer_functions import          signal_finder
 from detsim.simulation.buffer_functions import              wf_binner
@@ -34,7 +34,6 @@ from invisible_cities.cities.components import   copy_mc_info
 from invisible_cities.core  .configure  import      configure
 from invisible_cities.core              import system_of_units as units
 from invisible_cities.io    .mcinfo_io  import get_event_numbers_in_file
-from invisible_cities.io    .mcinfo_io  import  mc_info_writer
 from invisible_cities.reco              import   tbl_functions as   tbl
 
 from invisible_cities.dataflow          import dataflow as fl
@@ -48,7 +47,7 @@ def get_all_events(files_in):
     for fn in files_in:
         all_evt.append(get_event_numbers_in_file(fn))
     return np.concatenate(all_evt)
-    
+
 
 def position_signal(conf):
 
@@ -109,6 +108,7 @@ def position_signal(conf):
     with tb.open_file(file_out, "w", filters=tbl.filters(compression)) as h5out:
 
         buffer_writer_ = fl.sink(buffer_writer(h5out                  ,
+                                               run_number = run_number,
                                                n_sens_eng = npmt      ,
                                                n_sens_trk = nsipm     ,
                                                length_eng = nsamp_pmt ,
@@ -116,7 +116,7 @@ def position_signal(conf):
                                  args = ("evt", "pmt_ord", "sipm_ord",
                                          "evt_times", "buffers"))
 
-        save_run_info(h5out, run_number)
+        #save_run_info(h5out, run_number)
         ## In IC will have event_range option so will be like in other cities
         copy_mc_info(files_in, h5out, all_evt, detector_db, run_number)
         return push(source = load_sensors(files_in, detector_db, run_number),

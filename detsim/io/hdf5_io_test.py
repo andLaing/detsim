@@ -21,27 +21,27 @@ from . hdf5_io import   buffer_writer
 from . hdf5_io import event_timestamp
 from . hdf5_io import       load_hits
 from . hdf5_io import    load_sensors
-from . hdf5_io import   save_run_info
+#from . hdf5_io import   save_run_info
 
 from ..simulation.buffer_functions import      calculate_buffers
 from ..util      .util             import pmt_and_sipm_bin_width
 from ..util      .util             import          trigger_times
 
 
-def test_save_run_info(config_tmpdir):
+## def test_save_run_info(config_tmpdir):
 
-    run_number = -6400
+##     run_number = -6400
 
-    out_name = os.path.join(config_tmpdir, 'test_runInfo.h5')
-    with tb.open_file(out_name, 'w') as h5out:
+##     out_name = os.path.join(config_tmpdir, 'test_runInfo.h5')
+##     with tb.open_file(out_name, 'w') as h5out:
 
-        save_run_info(h5out, run_number)
+##         save_run_info(h5out, run_number)
 
-    with tb.open_file(out_name) as h5saved:
+##     with tb.open_file(out_name) as h5saved:
 
-        assert 'Run'     in h5saved.root
-        assert 'runInfo' in h5saved.root.Run
-        assert h5saved.root.Run.runInfo[0][0] == run_number
+##         assert 'Run'     in h5saved.root
+##         assert 'runInfo' in h5saved.root.Run
+##         assert h5saved.root.Run.runInfo[0][0] == run_number
 
 
 @mark.skip
@@ -108,6 +108,7 @@ def test_buffer_writer(config_tmpdir, event_definitions,
     with tb.open_file(out_name, 'w') as data_out:
 
         buffer_writer_ = buffer_writer(data_out,
+                                       run_number =   -6400,
                                        n_sens_eng =   n_pmt,
                                        n_sens_trk =  n_sipm,
                                        length_eng = len_eng,

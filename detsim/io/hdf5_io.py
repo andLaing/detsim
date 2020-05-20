@@ -2,6 +2,7 @@ import numpy  as np
 import pandas as pd
 import tables as tb
 
+from functools import   partial
 from functools import     wraps
 from typing    import  Callable
 from typing    import Generator
@@ -12,20 +13,23 @@ from invisible_cities.database           import                   load_db as  DB
 from invisible_cities.io      .mcinfo_io import        get_sensor_binning
 from invisible_cities.io      .mcinfo_io import load_mcsensor_response_df
 from invisible_cities.io      .mcinfo_io import            load_mchits_df
+from invisible_cities.io      .run_and_event_io import run_and_event_writer
 from invisible_cities.io      .rwf_io    import                rwf_writer
 from invisible_cities.reco               import             tbl_functions as tbl
 
 
-class EventInfo(tb.IsDescription):
-    """
-    For the runInfo table to save event
-    number and timestamp.
-    #Additionally, saves the original nexus
-    #event number
-    """
-    event_number = tb. Int32Col(shape=(), pos=0)
-    timestamp    = tb.UInt64Col(shape=(), pos=1)
-    #nexus_evt    = tb. Int32Col(shape=(), pos=2)
+## All Subevent/event splitting postponed until
+## IC compatibility considered.
+## class EventInfo(tb.IsDescription):
+##     """
+##     For the runInfo table to save event
+##     number, subevent and timestamp.
+##     #Additionally, saves the original nexus
+##     #event number
+##     """
+##     evt_number  = tb. Int32Col(shape=(), pos=0)
+##     #subevt_number = tb. Int32Col(shape=(), pos=1)
+##     timestamp     = tb.UInt64Col(shape=(), pos=1)
 
 
 class EventMap(tb.IsDescription):
@@ -34,45 +38,45 @@ class EventMap(tb.IsDescription):
     the original nexus event number
     NEEDS TO BE REVIEWED FOR INTEGRATION
     """
-    event_number = tb.Int32Col(shape=(), pos=0)
-    nexus_evt    = tb.Int32Col(shape=(), pos=1)
+    evt_number = tb.Int32Col(shape=(), pos=0)
+    nexus_evt  = tb.Int32Col(shape=(), pos=1)
 
 
-class RunInfo(tb.IsDescription):
-    """
-    Saves the run number in its own table
-    This is expected by diomira.
-    """
-    run_number = tb.Int32Col(shape=(), pos=0)
+## class RunInfo(tb.IsDescription):
+##     """
+##     Saves the run number in its own table
+##     This is expected by diomira.
+##     """
+##     run_number = tb.Int32Col(shape=(), pos=0)
 
 
-def save_run_info(h5out     : tb.file.File,
-                  run_number:          int) -> None:
-    """
-    Saves the run number used for the detsim
-    format job in the format expected by the
-    IC cities.
+## def save_run_info(h5out     : tb.file.File,
+##                   run_number:          int) -> None:
+##     """
+##     Saves the run number used for the detsim
+##     format job in the format expected by the
+##     IC cities.
 
-    h5out      : pytables file
-                 The open output file
-    run_number : int
-                 The run number set in the config
-    """
+##     h5out      : pytables file
+##                  The open output file
+##     run_number : int
+##                  The run number set in the config
+##     """
 
-    try:
-        run_table = getattr(h5out.root.Run, 'runInfo')
-    except tb.NoSuchNodeError:
-        try:
-            run_group = getattr(h5out.root, 'Run')
-            run_table = h5out.create_table(run_group, "runInfo", RunInfo,
-                                           "Run number used in detsim")
-        except tb.NoSuchNodeError:
-            run_group = h5out.create_group(h5out.root, 'Run')
-            run_table = h5out.create_table(run_group, "runInfo", RunInfo,
-                                           "Run number used in detsim")
-    row = run_table.row
-    row["run_number"] = run_number
-    row.append()
+##     try:
+##         run_table = getattr(h5out.root.Run, 'runInfo')
+##     except tb.NoSuchNodeError:
+##         try:
+##             run_group = getattr(h5out.root, 'Run')
+##             run_table = h5out.create_table(run_group, "runInfo", RunInfo,
+##                                            "Run number used in detsim")
+##         except tb.NoSuchNodeError:
+##             run_group = h5out.create_group(h5out.root, 'Run')
+##             run_table = h5out.create_table(run_group, "runInfo", RunInfo,
+##                                            "Run number used in detsim")
+##     row = run_table.row
+##     row["run_number"] = run_number
+##     row.append()
 
 
 #def event_timestamp(h5in: tb.file.File) -> Callable:
@@ -117,12 +121,14 @@ def event_timestamp(file_name : str) ->Callable:
 
 @wraps(rwf_writer)
 def buffer_writer(h5out, *,
+                  run_number : int           ,
                   n_sens_eng : int           ,
                   n_sens_trk : int           ,
                   length_eng : int           ,
                   length_trk : int           ,
                   group_name : str =     None,
-                  compression: str =  'ZLIB4') -> Callable[[int, List, List, List], None]:
+                  compression: str =  'ZLIB4'
+                  ) -> Callable[[int, List, List, List], None]:
     """
     Generalised buffer writer which defines a raw waveform writer
     for each type of sensor as well as an event info writer
@@ -144,15 +150,17 @@ def buffer_writer(h5out, *,
                             n_sensors       =  n_sens_trk,
                             waveform_length =  length_trk)
 
+    ## evt_tbl   = h5out.create_table(evt_group, "events", EventInfo,
+    ##                                "event & timestamp \
+    ##                                 for each index",
+    ##                                tbl.filters(compression))
+    run_event = partial(run_and_event_writer(h5out, compression=compression),
+                        run_number=run_number)
+
     try:
         evt_group = getattr(h5out.root, 'Run')
     except tb.NoSuchNodeError:
         evt_group = h5out.create_group(h5out.root, 'Run')
-
-    evt_tbl   = h5out.create_table(evt_group, "events", EventInfo,
-                                   "event & timestamp \
-                                    for each index",
-                                   tbl.filters(compression))
     nexus_map = h5out.create_table(evt_group, "eventMap", EventMap,
                                    "event & nexus evt \
                                     for each index",
@@ -164,14 +172,11 @@ def buffer_writer(h5out, *,
                       timestamps    : List[  int],
                       events        : List[Tuple]) -> None:
 
-        for t_stamp, (eng, trk) in zip(timestamps, events):
-            row  = evt_tbl.row
-            row ["event_number"] = nexus_evt#write_buffers.counter
-            row ["timestamp"]    = t_stamp
-            row .append()
+        for i, (t_stamp, (eng, trk)) in enumerate(zip(timestamps, events)):
+            run_event(event_number=nexus_evt, timestamp=t_stamp)
             mrow = nexus_map.row
-            mrow["event_number"] = nexus_evt#write_buffers.counter
-            mrow["nexus_evt"]    = nexus_evt
+            mrow["evt_number"]  = nexus_evt#write_buffers.counter
+            mrow["nexus_evt"]     = nexus_evt
             mrow.append()
 
             e_sens = np.zeros((n_sens_eng, length_eng), np.int)
@@ -183,8 +188,8 @@ def buffer_writer(h5out, *,
             t_sens[trk_sens_order] = trk
             trk_writer(t_sens)
 
-            write_buffers.counter += 1
-    write_buffers.counter = 0
+            #write_buffers.counter += 1
+    #write_buffers.counter = 0
     return write_buffers
 
 
