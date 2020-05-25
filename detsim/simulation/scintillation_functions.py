@@ -7,7 +7,7 @@ from functools import  partial
 from typing    import Callable
 from typing    import    Tuple
 
-from invisible_cities.core.system_of_units_c import   units
+from invisible_cities.core import system_of_units as   units
 from invisible_cities.database               import load_db as DB
 
 

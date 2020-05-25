@@ -4,7 +4,7 @@ import pandas as pd
 from invisible_cities.reco.peak_functions    import indices_and_wf_above_threshold
 from invisible_cities.reco.peak_functions    import                 split_in_peaks
 from invisible_cities.evm .event_model       import                       Waveform
-from invisible_cities.core.system_of_units_c import                          units
+from invisible_cities.core import system_of_units as           units
 
 from typing    import  Callable
 from typing    import Generator

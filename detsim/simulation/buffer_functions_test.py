@@ -7,7 +7,7 @@ import invisible_cities.database.load_db as DB
 
 from invisible_cities.io  .mcinfo_io         import        get_sensor_binning
 from invisible_cities.io  .mcinfo_io         import load_mcsensor_response_df
-from invisible_cities.core.system_of_units_c import                     units
+from invisible_cities.core import system_of_units as      units
 
 from . buffer_functions import         wf_binner
 from . buffer_functions import calculate_buffers

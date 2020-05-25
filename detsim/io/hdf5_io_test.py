@@ -13,9 +13,9 @@ from pytest import fixture
 from pytest import    mark
 from pytest import  raises
 
-from invisible_cities.io  .mcinfo_io         import load_mcsensor_response_df
-from invisible_cities.io  .mcinfo_io         import        get_sensor_binning
-from invisible_cities.core.system_of_units_c import                     units
+from invisible_cities.io  .mcinfo_io import load_mcsensor_response_df
+from invisible_cities.io  .mcinfo_io import        get_sensor_binning
+from invisible_cities.core           import           system_of_units as units
 
 from . hdf5_io import   buffer_writer
 from . hdf5_io import event_timestamp
