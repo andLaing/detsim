@@ -77,13 +77,13 @@ def calculate_buffers(buffer_len: float, pre_trigger: float,
                 pmt_pos    = npmt_bin, trg + pmt_postrg
                 pmt_sl     = slice(max(pmt_pre), min(pmt_pos))
                 pmt_pad    = (int(-min(pmt_pre)),
-                              int( max(0, pmt_pos[1] - npmt_bin + 1)))
+                              int( max(0, pmt_pos[1] - npmt_bin)))
 
                 sipm_pre   = 0        , trg_bin - sipm_pretrg
                 sipm_pos   = nsipm_bin, trg_bin + sipm_postrg
                 sipm_sl    = slice(max(sipm_pre), min(sipm_pos))
                 sipm_pad   = (int(-min(sipm_pre)),
-                              int( max(0, sipm_pos[1] - nsipm_bin + 1)))
+                              int( max(0, sipm_pos[1] - nsipm_bin)))
 
                 yield ((pmt_charge [:,  pmt_sl],  pmt_pad),
                        (sipm_charge[:, sipm_sl], sipm_pad))
@@ -135,22 +135,11 @@ def wf_binner(max_buffer: int) -> Callable:
         max_time = min(t_max, t_min + max_buffer)
         min_bin  = np.floor(t_min    / bin_width) * bin_width
         max_bin  = np.ceil (max_time / bin_width) * bin_width
-        ## if t_min is None or t_max is None:
-        ##     min_time = sensors.time.min()
-        ##     max_time = min(sensors.time.max()   ,
-        ##                    min_time + max_buffer)
-        ##     min_bin  = np.floor(min_time / bin_width) * bin_width
-        ##     max_bin  = np.floor(max_time / bin_width) * bin_width
-        ##     max_bin += bin_width
-        ## else:
-        ##     ## Adjust according to bin_width
-        ##     min_bin  = np.floor(t_min / bin_width) * bin_width
-        ##     max_bin  = np.ceil (t_max / bin_width) * bin_width
 
-        bins = np.arange(min_bin, max_bin, bin_width)
-
+        bins        = np.arange(min_bin, max_bin, bin_width)
+        b_pad       = bins[-1] + bin_width
         bin_sensors = sensors.groupby('sensor_id').apply(weighted_histogram,
-                                                         bins              )
+                                                         np.append(bins, b_pad))
         return bins, bin_sensors
     return bin_data
 
