@@ -21,6 +21,8 @@ def weighted_histogram(data: pd.DataFrame, bins: np.ndarray) -> np.ndarray:
 
 
 def padder(sensors: np.ndarray, padding: Tuple) -> np.ndarray:
+    if not sensors.shape[0]:
+        return np.empty((0, padding[0] + padding[1] + 1))
     return np.apply_along_axis(np.pad, 1, sensors, padding, "constant")
 
 
@@ -77,13 +79,13 @@ def calculate_buffers(buffer_len: float, pre_trigger: float,
                 pmt_pos    = npmt_bin, trg + pmt_postrg
                 pmt_sl     = slice(max(pmt_pre), min(pmt_pos))
                 pmt_pad    = (int(-min(pmt_pre)),
-                              int( max(0, pmt_pos[1] - npmt_bin + 1)))
+                              int( max(0, pmt_pos[1] - npmt_bin)))
 
                 sipm_pre   = 0        , trg_bin - sipm_pretrg
                 sipm_pos   = nsipm_bin, trg_bin + sipm_postrg
                 sipm_sl    = slice(max(sipm_pre), min(sipm_pos))
                 sipm_pad   = (int(-min(sipm_pre)),
-                              int( max(0, sipm_pos[1] - nsipm_bin + 1)))
+                              int( max(0, sipm_pos[1] - nsipm_bin)))
 
                 yield ((pmt_charge [:,  pmt_sl],  pmt_pad),
                        (sipm_charge[:, sipm_sl], sipm_pad))
@@ -96,7 +98,7 @@ def calculate_buffers(buffer_len: float, pre_trigger: float,
                         sipm_bins  : np.ndarray,
                         sipm_charge:  pd.Series) -> List:
 
-        sipm_q = np.array([[]])\
+        sipm_q = np.empty((0,0))\
           if sipm_charge.empty else np.array(sipm_charge.tolist())
         slice_and_pad = slice_generator(pmt_bins                     ,
                                         np.array(pmt_charge.tolist()),
