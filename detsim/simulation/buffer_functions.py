@@ -96,7 +96,7 @@ def calculate_buffers(buffer_len: float, pre_trigger: float,
                         sipm_bins  : np.ndarray,
                         sipm_charge:  pd.Series) -> List:
 
-        sipm_q = np.zeros_like(sipm_bins)\
+        sipm_q = np.zeros((1, len(sipm_bins)))\
           if sipm_charge.empty else np.array(sipm_charge.tolist())
         slice_and_pad = slice_generator(pmt_bins                     ,
                                         np.array(pmt_charge.tolist()),
