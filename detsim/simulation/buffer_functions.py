@@ -77,13 +77,13 @@ def calculate_buffers(buffer_len: float, pre_trigger: float,
                 pmt_pos    = npmt_bin, trg + pmt_postrg
                 pmt_sl     = slice(max(pmt_pre), min(pmt_pos))
                 pmt_pad    = (int(-min(pmt_pre)),
-                              int( max(0, pmt_pos[1] - npmt_bin)))
+                              int( max(0, pmt_pos[1] - npmt_bin + 1)))
 
                 sipm_pre   = 0        , trg_bin - sipm_pretrg
                 sipm_pos   = nsipm_bin, trg_bin + sipm_postrg
                 sipm_sl    = slice(max(sipm_pre), min(sipm_pos))
                 sipm_pad   = (int(-min(sipm_pre)),
-                              int( max(0, sipm_pos[1] - nsipm_bin)))
+                              int( max(0, sipm_pos[1] - nsipm_bin + 1)))
 
                 yield ((pmt_charge [:,  pmt_sl],  pmt_pad),
                        (sipm_charge[:, sipm_sl], sipm_pad))
@@ -138,7 +138,7 @@ def wf_binner(max_buffer: int) -> Callable:
 
         bins        = np.arange(min_bin, max_bin, bin_width)
         b_pad       = bins[-1] + bin_width
-        bin_sensors = sensors.groupby('sensor_id').apply(weighted_histogram,
+        bin_sensors = sensors.groupby('sensor_id').apply(weighted_histogram    ,
                                                          np.append(bins, b_pad))
         return bins, bin_sensors
     return bin_data
