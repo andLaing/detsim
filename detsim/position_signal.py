@@ -69,18 +69,18 @@ def position_signal(conf):
     all_evt            = get_all_events(files_in)
 
     extract_tminmax    = fl.map(first_and_last_times,
-                                args = ("pmt_resp"   ,   "sipm_resp",
+                                args = ("pmt_wfs"   ,   "sipm_wfs",
                                         "pmt_binwid", "sipm_binwid"),
                                 out  = ("min_time", "max_time"))
 
     bin_calculation    = wf_binner(max_time)
     bin_pmt_wf         = fl.map(bin_calculation,
-                                args = ("pmt_resp",  "pmt_binwid",
+                                args = ("pmt_wfs",  "pmt_binwid",
                                         "min_time",    "max_time"),
                                 out  = ("pmt_bins", "pmt_bin_wfs"))
 
     bin_sipm_wf        = fl.map(bin_calculation,
-                                args = ("sipm_resp", "sipm_binwid",
+                                args = ("sipm_wfs", "sipm_binwid",
                                         "min_time" ,    "max_time"),
                                 out  = ("sipm_bins", "sipm_bin_wfs"))
 
