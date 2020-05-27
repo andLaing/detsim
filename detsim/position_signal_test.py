@@ -27,11 +27,12 @@ def test_position_signal_kr(config_tmpdir, fullsim_data, test_config):
     with tb.open_file(fullsim_data, mode='r') as h5in, \
          tb.open_file(PATH_OUT    , mode='r') as h5out:
 
-        #assert hasattr(h5out.root   ,        'MC')
+        assert hasattr(h5out.root   ,        'MC')
         assert hasattr(h5out.root   ,       'Run')
-        #assert hasattr(h5out.root.MC,   'extents')
-        #assert hasattr(h5out.root.MC,      'hits')
-        #assert hasattr(h5out.root.MC, 'particles')
+        assert hasattr(h5out.root   ,     'pmtrd')
+        assert hasattr(h5out.root   ,    'sipmrd')
+        assert hasattr(h5out.root.MC,      'hits')
+        assert hasattr(h5out.root.MC, 'particles')
 
         #assert_tables_equality(h5in .root.MC.particles,
         #                       h5out.root.MC.particles)
