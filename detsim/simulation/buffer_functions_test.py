@@ -46,8 +46,9 @@ def binned_waveforms(mc_waveforms, pmt_ids, sipm_ids):
     evt   = evts[0]
     wfs   = all_wfs.loc[evt]
 
-    pmts  = wfs.loc[ pmt_ids]
-    sipms = wfs.loc[sipm_ids]
+    pmt_indx  = wfs.index.isin(pmt_ids)
+    pmts  = wfs[ pmt_indx]
+    sipms = wfs[~pmt_indx]
 
     ## Assumes pmts the triggering sensors as in new/next-100
     bins_min = pmts.time.min()
@@ -68,8 +69,9 @@ def test_wf_binner(mc_waveforms, pmt_ids, sipm_ids, binned_waveforms):
     evt   = evts[0]
     wfs   = all_wfs.loc[evt]
 
-    pmts  = wfs.loc[ pmt_ids]
-    sipms = wfs.loc[sipm_ids]
+    pmt_indx  = wfs.index.isin(pmt_ids)
+    pmts  = wfs[ pmt_indx]
+    sipms = wfs[~pmt_indx]
 
     assert np.all(np.diff( pmt_bins) ==  pmt_binwid)
     assert np.all(np.diff(sipm_bins) == sipm_binwid)
