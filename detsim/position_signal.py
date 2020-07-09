@@ -18,7 +18,7 @@ from functools import partial
 from functools import   wraps
 from typing    import   Tuple
 
-from detsim.io        .hdf5_io          import          buffer_writer
+#from detsim.io        .hdf5_io          import          buffer_writer
 from detsim.io        .hdf5_io          import           load_sensors
 #from detsim.io        .hdf5_io          import          save_run_info
 from detsim.simulation.buffer_functions import      calculate_buffers
@@ -35,6 +35,7 @@ from invisible_cities.cities.components import   copy_mc_info
 from invisible_cities.core  .configure  import      configure
 from invisible_cities.core              import system_of_units as units
 from invisible_cities.io    .mcinfo_io  import get_event_numbers_in_file
+from invisible_cities.io    .rwf_io     import   buffer_writer
 from invisible_cities.reco              import   tbl_functions as   tbl
 
 from invisible_cities.dataflow          import dataflow as fl
