@@ -28,6 +28,7 @@ from detsim.util      .util             import   first_and_last_times
 from detsim.util      .util             import         get_no_sensors
 from detsim.util      .util             import pmt_and_sipm_bin_width
 from detsim.util      .util             import           sensor_order
+from detsim.util      .util             import          order_sensors
 from detsim.util      .util             import          trigger_times
 
 from invisible_cities.cities.components import   copy_mc_info
