@@ -121,8 +121,7 @@ def position_signal(conf):
                                                n_sens_trk = nsipm     ,
                                                length_eng = nsamp_pmt ,
                                                length_trk = nsamp_sipm),
-                                 args = ("evt", "pmt_ord", "sipm_ord",
-                                         "evt_times", "buffers"))
+                                 args = ("evt", "evt_times", "buffers"))
 
         #save_run_info(h5out, run_number)
         ## In IC will have event_range option so will be like in other cities
@@ -131,10 +130,10 @@ def position_signal(conf):
                     pipe   = pipe(extract_tminmax     ,
                                   bin_pmt_wf          ,
                                   bin_sipm_wf         ,
-                                  sensor_order_       ,
                                   signal_finder_      ,
                                   event_times         ,
                                   calculate_buffers_  ,
+                                  sensor_order_       ,
                                   buffer_writer_      ))
 
 
