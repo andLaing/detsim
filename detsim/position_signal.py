@@ -86,11 +86,16 @@ def position_signal(conf):
                                         "min_time" ,    "max_time"),
                                 out  = ("sipm_bins", "sipm_bin_wfs"))
 
-    sensor_order_      = fl.map(partial(sensor_order,
-                                        detector_db = detector_db,
-                                        run_number  =  run_number),
-                                args = ("pmt_bin_wfs", "sipm_bin_wfs"),
-                                out  = ("pmt_ord", "sipm_ord"))
+    #sensor_order_      = fl.map(partial(sensor_order,
+    #                                    detector_db = detector_db,
+    #                                    run_number  =  run_number),
+    #                            args = ("pmt_bin_wfs", "sipm_bin_wfs"),
+    #                            out  = ("pmt_ord", "sipm_ord"))
+    sensor_order_      = fl.map(order_sensors(detector_db, run_number,
+                                              npmt       , nsamp_pmt ,
+                                              nsipm      , nsamp_sipm),
+                                args = ("pmt_bin_wfs", "sipm_bin_wfs", "buffers"),
+                                out  = ("ord_buffers"))
 
     signal_finder_     = fl.map(signal_finder(buffer_length,
                                               pmt_wid, trg_threshold),
