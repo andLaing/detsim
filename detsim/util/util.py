@@ -1,8 +1,9 @@
 import numpy  as np
 import pandas as pd
 
-from typing import  List
-from typing import Tuple
+from typing import Callable
+from typing import     List
+from typing import    Tuple
 
 from invisible_cities.io      .mcinfo_io import get_sensor_binning
 from invisible_cities.database.load_db   import            DataPMT
