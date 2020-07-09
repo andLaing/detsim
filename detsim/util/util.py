@@ -36,6 +36,35 @@ def sensor_order(pmt_wfs    : pd.Series,
     sipm_ord = sipms[sipms.isin(sipm_wfs.index.tolist())].index
     return pmt_ord, sipm_ord
 
+def order_sensors(detector_db: str, run_number : int,
+                  n_pmt      : int, length_pmt : int,
+                  n_sipm     : int, length_sipm: int) -> Callable:
+    """
+    Casts the event sensor info into the correct order
+    adding zeros for sensors which didn't see any signal.
+    """
+    pmt_ids    = DataPMT (detector_db, run_number).SensorID
+    sipm_ids   = DataSiPM(detector_db, run_number).SensorID
+    pmt_shape  = (n_pmt , length_pmt )
+    sipm_shape = (n_sipm, length_sipm)
+    def ordering(sensor_order : pd.Int64Index,
+                 sensor_resp  : np.ndarray   ,
+                 sensor_shape : Tuple        ) -> np.ndarray:
+        sensors = np.zeros(sensor_shape, np.int)
+        sensors[sensor_order] = sensor_resp
+        return sensors
+        
+    def order_and_pad(pmt_resp      : pd.Series  ,
+                      sipm_resp     : pd.Series  ,
+                      evt_buffers : List[Tuple]) -> List[Tuple]:
+        pmt_ord  = pmt_ids [ pmt_ids.isin( pmt_resp.index.tolist())].index
+        sipm_ord = sipm_ids[sipm_ids.isin(sipm_resp.index.tolist())].index
+
+        return [(ordering(pmt_ord , pmts , pmt_shape ),
+                 ordering(sipm_ord, sipms, sipm_shape))
+                    for pmts, sipms in evt_buffers]
+    return order_and_pad
+
 
 def get_no_sensors(detector_db: str, run_number: int) -> Tuple:
     npmt  = DataPMT (detector_db, run_number).shape[0]
