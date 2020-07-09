@@ -55,8 +55,8 @@ def order_sensors(detector_db: str, run_number : int,
         sensors[sensor_order] = sensor_resp
         return sensors
         
-    def order_and_pad(pmt_resp      : pd.Series  ,
-                      sipm_resp     : pd.Series  ,
+    def order_and_pad(pmt_resp      : pd.Series,
+                      sipm_resp     : pd.Series,
                       evt_buffers : List[Tuple]) -> List[Tuple]:
         pmt_ord  = pmt_ids [ pmt_ids.isin( pmt_resp.index.tolist())].index
         sipm_ord = sipm_ids[sipm_ids.isin(sipm_resp.index.tolist())].index
