@@ -121,7 +121,7 @@ def position_signal(conf):
                                                n_sens_trk = nsipm     ,
                                                length_eng = nsamp_pmt ,
                                                length_trk = nsamp_sipm),
-                                 args = ("evt", "evt_times", "buffers"))
+                                 args = ("evt", "evt_times", "ord_buffers"))
 
         #save_run_info(h5out, run_number)
         ## In IC will have event_range option so will be like in other cities
