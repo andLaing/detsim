@@ -18,26 +18,23 @@ from functools import partial
 from functools import   wraps
 from typing    import   Tuple
 
-#from detsim.io        .hdf5_io          import          buffer_writer
-#from detsim.io        .hdf5_io          import           load_sensors
-#from detsim.io        .hdf5_io          import          save_run_info
-from detsim.simulation.buffer_functions import      calculate_buffers
-from detsim.simulation.buffer_functions import          signal_finder
-from detsim.simulation.buffer_functions import              wf_binner
-from detsim.util      .util             import   first_and_last_times
-from detsim.util      .util             import         get_no_sensors
-from detsim.util      .util             import pmt_and_sipm_bin_width
-from detsim.util      .util             import           sensor_order
-from detsim.util      .util             import          order_sensors
-from detsim.util      .util             import          trigger_times
+from detsim.io        .hdf5_io          import           load_sensors
 
-from invisible_cities.cities.components import   copy_mc_info
-from invisible_cities.cities.components import mcsensors_from_file
-from invisible_cities.core  .configure  import      configure
-from invisible_cities.core              import system_of_units as units
-from invisible_cities.io    .mcinfo_io  import get_event_numbers_in_file
-from invisible_cities.io    .rwf_io     import buffer_writer
-from invisible_cities.reco              import   tbl_functions as   tbl
+from invisible_cities.cities.components   import   copy_mc_info
+#from invisible_cities.cities.components import mcsensors_from_file
+from invisible_cities.core  .configure    import      configure
+from invisible_cities.core                import system_of_units as units
+from invisible_cities.detector_simulation.buffer_functions import calculate_buffers
+from invisible_cities.detector_simulation.buffer_functions import     signal_finder
+from invisible_cities.detector_simulation.buffer_functions import         wf_binner
+from invisible_cities.detector_simulation.sensor_utils import first_and_last_times
+from invisible_cities.detector_simulation.sensor_utils import get_no_sensors
+from invisible_cities.detector_simulation.sensor_utils import pmt_and_sipm_bin_width
+from invisible_cities.detector_simulation.sensor_utils import order_sensors
+from invisible_cities.detector_simulation.sensor_utils import trigger_times
+from invisible_cities.io    .mcinfo_io    import get_event_numbers_in_file
+from invisible_cities.io    .rwf_io       import buffer_writer
+from invisible_cities.reco                import   tbl_functions as   tbl
 
 from invisible_cities.dataflow          import dataflow as fl
 from invisible_cities.dataflow.dataflow import     fork
@@ -71,26 +68,21 @@ def position_signal(conf):
     all_evt            = get_all_events(files_in)
 
     extract_tminmax    = fl.map(first_and_last_times,
-                                args = ("pmt_resp"   ,  "sipm_resp",
+                                args = ("pmt_wfs"   ,  "sipm_wfs",
                                         "pmt_binwid", "sipm_binwid"),
                                 out  = ("min_time", "max_time"))
 
     bin_calculation    = wf_binner(max_time)
     bin_pmt_wf         = fl.map(bin_calculation,
-                                args = ("pmt_resp",  "pmt_binwid",
+                                args = ("pmt_wfs",  "pmt_binwid",
                                         "min_time",    "max_time"),
                                 out  = ("pmt_bins", "pmt_bin_wfs"))
 
     bin_sipm_wf        = fl.map(bin_calculation,
-                                args = ("sipm_resp", "sipm_binwid",
+                                args = ("sipm_wfs", "sipm_binwid",
                                         "min_time" ,    "max_time"),
                                 out  = ("sipm_bins", "sipm_bin_wfs"))
 
-    ## sensor_order_      = fl.map(partial(sensor_order,
-    ##                                     detector_db = detector_db,
-    ##                                     run_number  =  run_number),
-    ##                             args = ("pmt_bin_wfs", "sipm_bin_wfs"),
-    ##                             out  = ("pmt_ord", "sipm_ord"))
     sensor_order_      = fl.map(order_sensors(detector_db, run_number,
                                               npmt       , nsamp_pmt ,
                                               nsipm      , nsamp_sipm),
@@ -115,14 +107,6 @@ def position_signal(conf):
 
     with tb.open_file(file_out, "w", filters=tbl.filters(compression)) as h5out:
 
-        ## buffer_writer_ = fl.sink(buffer_writer(h5out                  ,
-        ##                                        run_number = run_number,
-        ##                                        n_sens_eng = npmt      ,
-        ##                                        n_sens_trk = nsipm     ,
-        ##                                        length_eng = nsamp_pmt ,
-        ##                                        length_trk = nsamp_sipm),
-        ##                          args = ("evt", "pmt_ord", "sipm_ord",
-        ##                                  "evt_times", "buffers"))
         buffer_writer_ = fl.sink(buffer_writer(h5out                  ,
                                                run_number = run_number,
                                                n_sens_eng = npmt      ,
@@ -134,12 +118,10 @@ def position_signal(conf):
         #save_run_info(h5out, run_number)
         ## In IC will have event_range option so will be like in other cities
         copy_mc_info(files_in, h5out, all_evt, detector_db, run_number)
-        #return push(source = load_sensors(files_in, detector_db, run_number),
-        return push(source = mcsensors_from_file(files_in, detector_db, run_number),
+        return push(source = load_sensors(files_in, detector_db, run_number),
                     pipe   = pipe(extract_tminmax     ,
                                   bin_pmt_wf          ,
                                   bin_sipm_wf         ,
-                                  #sensor_order_       ,
                                   signal_finder_      ,
                                   event_times         ,
                                   calculate_buffers_  ,
